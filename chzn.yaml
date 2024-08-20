@@ -6,6 +6,7 @@
       apt:
         name: ifenslave
         state: present
+        update_cache: true
 
     - name: Netplan configuration for LACP
       copy:
