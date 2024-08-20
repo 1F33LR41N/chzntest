@@ -1,0 +1,61 @@
+---
+- name: New server configuration
+  hosts: newsrv
+  tasks:
+    - name: Install required ifenslave package for LACP
+      apt:
+        name: ifenslave
+        state: present
+
+    - name: Netplan configuration for LACP
+      copy:
+        dest: /etc/netplan/01-lacp.yaml
+        content: |
+          network:
+            version: 2
+            renderer: networkd
+            ethernets:
+              ens18:
+                dhcp4: no
+              ens19:
+                dhcp4: no
+            bonds:
+              bond0:
+                dhcp4: no
+                interfaces: [ens18, ens19]
+                addresses: [192.168.2.2/24]
+                gateway4: 192.168.2.1
+                nameservers:
+                  addresses: [1.1.1.1, 8.8.8.8]
+                parameters:
+                  mode: 802.3ad
+                  lacp-rate: fast
+                  mii-monitor-interval: 100
+
+    - name: Apply Netplan config
+      command: netplan apply
+
+    - name: Creating new user "chzn"
+      user:
+        name: chzn
+        password: "{{ '93pF1R4x0dTy' |  password_hash('sha512')}}"
+        shell: /bin/bash
+        state: present
+        createhome: yes
+
+    - name: Change SSH port to 10228
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '^#Port'
+        line: 'Port 10228'
+
+    - name: Restart SSH daemon
+      service:
+        name: sshd
+        state: restarted
+
+    - name: Change user 'user' password
+      user:
+        name: user
+        state: present
+        password: "{{ 'G5x92s29pLlf' |  password_hash('sha512')}}"
